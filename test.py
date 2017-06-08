@@ -17,7 +17,7 @@ class TestClient(unittest.TestCase):
     def test_grid_content(self):
         for row in self.client.grid:
             for col in row:
-                assertTrue(col in (0, 1))
+                self.assertTrue(col in (0, 1))
 
 
 if __name__ == '__main__':
