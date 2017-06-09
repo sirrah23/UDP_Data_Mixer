@@ -3,11 +3,15 @@ import time
 from src.client import Client
 from .test_utils import FakeServer
 
+# Address and Port where server will listen and
+# client will send data...
+ADDRESS = "127.0.0.1"
+PORT = 5005
 
 class TestClient(unittest.TestCase):
 
     def setUp(self):
-        self.client = Client(rows=3, cols=4,proxy_address='127.0.0.1', proxy_port=5005)
+        self.client = Client(rows=3, cols=4,proxy_address=ADDRESS, proxy_port=PORT)
     
     def test_grid_dimensions(self):
         self.assertEqual(self.client.rows, 3)
@@ -22,7 +26,7 @@ class TestClient(unittest.TestCase):
                 self.assertTrue(col in (0, 1))
 
     def test_data_send(self):
-        server = FakeServer('127.0.0.1', 5005)
+        server = FakeServer(ADDRESS, PORT)
         server.run()
         time.sleep(1) # Give thread time to start
         self.client.send_msg_to_proxy(self.client.generate_msg())
