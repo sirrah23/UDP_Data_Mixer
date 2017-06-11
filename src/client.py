@@ -26,12 +26,16 @@ class Client(object):
     def create_socket(self):
         return socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    #TODO: Write tests for this
+    def send_frame(self, data):
+        if self.transmit_this_packet:
+            self.send_msg_to_proxy(data)
+        else:
+            self.transmit_this_packet = False
+
     def send_msg_to_proxy(self, data):
         msg = pickle.dumps(data)
         self.socket.sendto(msg, (self.proxy_address, self.proxy_port))
 
-    #TODO: Write tests for this
     def generate_msg(self):
         return {
                 "seq_num": self.seq_num,

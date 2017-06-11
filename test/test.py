@@ -26,9 +26,11 @@ class TestClient(unittest.TestCase):
     def test_data_send(self):
         server = FakeServer(ADDRESS, PORT)
         server.run()
-        time.sleep(1) # Give thread time to start
+        time.sleep(0.5) # Give thread time to start
         self.client.send_msg_to_proxy(self.client.generate_msg())
-        time.sleep(1) # Give message time to be sent and processed
+        time.sleep(0.5) # Give message time to be sent and processed
+        server.stop()
+        time.sleep(0.5)
         self.assertEqual(len(server.received_data), 1) 
         self.assertEqual(server.received_data[0]['seq_num'], 0)
         self.assertEqual(server.received_data[0]['data'], self.client.grid)
@@ -47,6 +49,29 @@ class TestClient(unittest.TestCase):
         self.client.drop_packet()
         self.assertEqual(1, self.client.seq_num)
         self.assertEqual(False, self.client.transmit_this_packet)
+
+    def test_send_frame(self):
+        server = FakeServer(ADDRESS, PORT)
+        server.run()
+        time.sleep(0.5)
+        self.client.send_frame(self.client.generate_msg())
+        time.sleep(0.5)
+        server.stop()
+        time.sleep(0.5)
+        self.assertEqual(len(server.received_data), 1) 
+        self.assertEqual(server.received_data[0]['seq_num'], 0)
+        self.assertEqual(server.received_data[0]['data'], self.client.grid)
+
+    def test_drop_send_frame(self):
+        server = FakeServer(ADDRESS, PORT)
+        server.run()
+        time.sleep(0.5)
+        self.client.drop_packet()
+        self.client.send_frame(self.client.generate_msg())
+        time.sleep(0.5)
+        server.stop()
+        time.sleep(0.5)
+        self.assertEqual(len(server.received_data), 0) 
 
     def tearDown(self):
         self.client.stop_client()
