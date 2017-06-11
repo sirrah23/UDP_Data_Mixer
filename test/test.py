@@ -6,6 +6,9 @@ from .utils import FakeServer
 ADDRESS = "127.0.0.1"
 PORT = 5005
 
+#TODO: Server setup code and sleep stuff should
+# inside of functions
+
 class TestClient(unittest.TestCase):
 
     def setUp(self):
@@ -54,7 +57,7 @@ class TestClient(unittest.TestCase):
         server = FakeServer(ADDRESS, PORT)
         server.run()
         time.sleep(0.5)
-        self.client.send_frame(self.client.generate_msg())
+        self.client.send_frame()
         time.sleep(0.5)
         server.stop()
         time.sleep(0.5)
@@ -67,11 +70,28 @@ class TestClient(unittest.TestCase):
         server.run()
         time.sleep(0.5)
         self.client.drop_packet()
-        self.client.send_frame(self.client.generate_msg())
+        self.client.send_frame()
         time.sleep(0.5)
         server.stop()
         time.sleep(0.5)
         self.assertEqual(len(server.received_data), 0) 
+
+    def test_skip_frame(self):
+        server = FakeServer(ADDRESS, PORT)
+        server.run()
+        time.sleep(0.5)
+        self.client.send_frame()
+        time.sleep(0.5)
+        print(self.client.seq_num)
+        self.client.skip_packet()
+        self.client.send_frame()
+        time.sleep(0.5)
+        server.stop()
+        time.sleep(0.5)
+        self.assertEqual(len(server.received_data), 2) 
+        self.assertEqual(server.received_data[0]['seq_num'], 0)
+        self.assertEqual(server.received_data[1]['seq_num'], 2)
+        self.assertEqual(server.received_data[1]['data'], self.client.grid)
 
     def tearDown(self):
         self.client.stop_client()

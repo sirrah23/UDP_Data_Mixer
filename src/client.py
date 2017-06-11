@@ -26,9 +26,11 @@ class Client(object):
     def create_socket(self):
         return socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def send_frame(self, data):
+    def send_frame(self):
         if self.transmit_this_packet:
+            data = self.generate_msg()
             self.send_msg_to_proxy(data)
+            self.seq_num += 1 # next frame!
         else:
             self.transmit_this_packet = False
 
@@ -51,7 +53,8 @@ class Client(object):
             self.seq_num += 1
 
     def skip_packet(self):
-        pass
+        if self.transmit_this_packet:
+            self.seq_num += 1
 
     def reverse_seq(self):
         pass
