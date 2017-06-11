@@ -1,10 +1,8 @@
 import unittest
 import time
 from src.client import Client
-from .test_utils import FakeServer
+from .utils import FakeServer
 
-# Address and Port where server will listen and
-# client will send data...
 ADDRESS = "127.0.0.1"
 PORT = 5005
 
@@ -35,5 +33,20 @@ class TestClient(unittest.TestCase):
         self.assertEqual(server.received_data[0]['seq_num'], 0)
         self.assertEqual(server.received_data[0]['data'], self.client.grid)
 
+    def test_drop_packet(self):
+        self.assertEqual(0, self.client.seq_num)
+        self.client.drop_packet()
+        self.assertEqual(1, self.client.seq_num)
+        self.assertEqual(False, self.client.transmit_this_packet)
+
+    def test_drop_packet_twice(self):
+        self.assertEqual(0, self.client.seq_num)
+        self.client.drop_packet()
+        self.assertEqual(1, self.client.seq_num)
+        self.assertEqual(False, self.client.transmit_this_packet)
+        self.client.drop_packet()
+        self.assertEqual(1, self.client.seq_num)
+        self.assertEqual(False, self.client.transmit_this_packet)
+
     def tearDown(self):
-        pass
+        self.client.stop_client()

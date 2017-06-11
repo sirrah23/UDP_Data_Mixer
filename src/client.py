@@ -1,6 +1,6 @@
 import socket
 import random
-import cPickle
+import pickle
 
 class Client(object):
 
@@ -12,6 +12,7 @@ class Client(object):
         self.seq_num = 0
         self.grid = self.generate_grid()
         self.socket = self.create_socket()
+        self.transmit_this_packet = True
 
     def generate_grid(self):
         grid = []
@@ -27,7 +28,7 @@ class Client(object):
 
     #TODO: Write tests for this
     def send_msg_to_proxy(self, data):
-        msg = cPickle.dumps(data)
+        msg = pickle.dumps(data)
         self.socket.sendto(msg, (self.proxy_address, self.proxy_port))
 
     #TODO: Write tests for this
@@ -36,9 +37,14 @@ class Client(object):
                 "seq_num": self.seq_num,
                 "data": self.grid
                 }
+    
+    def stop_client(self):
+        self.socket.close()
 
     def drop_packet(self):
-        pass
+        if self.transmit_this_packet:
+            self.transmit_this_packet = False
+            self.seq_num += 1
 
     def skip_packet(self):
         pass
