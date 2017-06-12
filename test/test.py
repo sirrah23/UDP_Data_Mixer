@@ -38,21 +38,6 @@ class TestClient(unittest.TestCase):
         self.assertEqual(server.received_data[0]['seq_num'], 0)
         self.assertEqual(server.received_data[0]['data'], self.client.grid)
 
-    def test_drop_packet(self):
-        self.assertEqual(0, self.client.seq_num)
-        self.client.drop_packet()
-        self.assertEqual(1, self.client.seq_num)
-        self.assertEqual(False, self.client.transmit_this_packet)
-
-    def test_drop_packet_twice(self):
-        self.assertEqual(0, self.client.seq_num)
-        self.client.drop_packet()
-        self.assertEqual(1, self.client.seq_num)
-        self.assertEqual(False, self.client.transmit_this_packet)
-        self.client.drop_packet()
-        self.assertEqual(1, self.client.seq_num)
-        self.assertEqual(False, self.client.transmit_this_packet)
-
     def test_send_frame(self):
         server = FakeServer(ADDRESS, PORT)
         server.run()
@@ -82,7 +67,6 @@ class TestClient(unittest.TestCase):
         time.sleep(0.5)
         self.client.send_frame()
         time.sleep(0.5)
-        print(self.client.seq_num)
         self.client.skip_packet()
         self.client.send_frame()
         time.sleep(0.5)
@@ -92,6 +76,23 @@ class TestClient(unittest.TestCase):
         self.assertEqual(server.received_data[0]['seq_num'], 0)
         self.assertEqual(server.received_data[1]['seq_num'], 2)
         self.assertEqual(server.received_data[1]['data'], self.client.grid)
+
+    def test_reverse_seq(self):
+        server = FakeServer(ADDRESS, PORT)
+        server.run()
+        time.sleep(0.5)
+
+        self.client.reverse_seq()
+        self.client.send_frame()
+        time.sleep(0.5)
+        self.client.send_frame()
+        time.sleep(0.5)
+        server.stop()
+        time.sleep(0.5)
+
+        self.assertEqual(len(server.received_data), 2)
+        self.assertEqual(server.received_data[0]['seq_num'], 1)
+        self.assertEqual(server.received_data[1]['seq_num'], 0)
 
     def tearDown(self):
         self.client.stop_client()
