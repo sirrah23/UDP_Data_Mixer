@@ -1,7 +1,6 @@
 import socket
 import threading
 
-# TODO: Write unit tests...
 
 class ClientStore(object):
 
@@ -12,9 +11,17 @@ class ClientStore(object):
         self._seqnum = -1
 
     def new_frame(self, data):
-        self._framebuffer.append(data)
-        print(data)
-        print(len(self._framebuffer))
+        if data["seq_num"] > self._seqnum:
+            self._seqnum = data["seq_num"]
+            self._framebuffer.append(data["data"])
+
+    @property
+    def seqnum(self):
+        return self._seqnum
+
+    @property
+    def framebuffer(self):
+        return self._framebuffer
 
 
 class ProxyServerReqHandler(object):
