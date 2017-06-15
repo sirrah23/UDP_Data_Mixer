@@ -71,6 +71,7 @@ class Client(object):
 
     def generate_msg(self):
         return {
+                "request_type": "frame_data",
                 "seq_num": self.sqnmanager.get_next_seq_num(),
                 "data": self.grid
                 }
