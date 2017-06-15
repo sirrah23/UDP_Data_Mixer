@@ -1,6 +1,14 @@
 import socket
 import threading
 
+class Mixer(object):
+
+    def __int__(self):
+        pass
+
+    def mix(self, data):
+        """Aggregate all of the nested matrices via summing all the numbers"""
+        return sum([sum(map(sum, mat)) for mat in data])
 
 class ClientStore(object):
 
@@ -9,6 +17,7 @@ class ClientStore(object):
         self._port = addr[1]
         self._framebuffer = []
         self._seqnum = -1
+        self._mixer = Mixer()
 
     def new_frame(self, data):
         if data["seq_num"] > self._seqnum:
@@ -48,7 +57,7 @@ class ProxyServerReqHandler(object):
 class ProxyServer(object):
 
     def __init__(self, address, port):
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.address = address
         self.port = port
         self.reqhandler = ProxyServerReqHandler()
@@ -63,4 +72,3 @@ class ProxyServer(object):
 if __name__ == "__main__":
     ps = ProxyServer("127.0.0.1", 5005)
     ps.run()
-
