@@ -10,8 +10,24 @@ class Mixer(object):
         pass
 
     def mix(self, data):
+        data = self.handle_stale(data)
+        data = map(lambda d: d['data'], data)
+        return self.mix_matrices(data)
+
+    def handle_stale(self, data):
+        def halve_stale(data):
+            if data["stale"]:
+                d = [map(lambda x: x/2.0, d) for d in data["data"]]
+            else:
+                d = data["data"]
+            return {"stale": data["stale"], "data": d}
+        return map(halve_stale, data)
+
+
+    def mix_matrices(self, data):
         """Aggregate all of the nested matrices via summing all the numbers"""
         return sum([sum(map(sum, mat)) for mat in data])
+
 
 class ClientStore(object):
 
@@ -28,12 +44,16 @@ class ClientStore(object):
             self._framebuffer.append(data["data"])
             self._rcvdata = True
 
-    #TODO: Implement
     def get_frame_for_agg(self):
-        pass
+        stale = not self._rcvdata
+        self._rcvdata = False if self._rcvdata else self._rcvdata
+        try:
+            data = self._framebuffer[-1]
+        except IndexError:
+            data = None
+        return {'stale':stale, 'data':data}
 
 
-#TODO: Unit tests for this class
 class ProxyServerReqHandler(object):
 
     def __init__(self, Mixer):
@@ -52,16 +72,12 @@ class ProxyServerReqHandler(object):
                 cstore.new_frame(data)
             elif data["request_type"] == MIX:
                 frames_to_agg = []
-                for k, v in self._client_list:
+                for _, v in self._client_list:
                     frames_to_agg.append(v.get_frame_for_agg())
                 frames_to_agg = self.normalize_frames(frames_to_agg)
-                #TODO: Filter empty frames...
+                frames_to_agg = filter(lambda d: d['data'] != None, frames_to_agg)
                 packet = self._mixer.mix(frames_to_agg)
                 self._packets.append(packet)
-
-    #TODO: Implement this
-    def normalize_frames(self):
-        pass
 
     def get_client(self, addr):
         return self._client_list.get(addr, None)

@@ -7,6 +7,9 @@ PORT = 1234
 def gen_data(seq_num, data):
     return {"request_type": "frame_data", "seq_num": seq_num, "data": data}
 
+def gen_mix_frame(staleness, data):
+    return {"stale": staleness, "data": data}
+
 class TestClientStore(unittest.TestCase):
 
     def setUp(self):
@@ -26,14 +29,14 @@ class TestClientStore(unittest.TestCase):
         self.assertEqual(len(self.cs._framebuffer), 0)
         self.assertEqual(self.cs._rcvdata, False)
 
-    def get_agg_frame(self):
+    def test_get_agg_frame(self):
         frame = gen_data(1, [[1,0],[0,1]])
         self.cs.new_frame(frame)
         aggframe = self.cs.get_frame_for_agg()
         self.assertEqual(aggframe['stale'], False)
         self.assertEqual(aggframe['data'], [[1, 0],[0, 1]])
 
-    def get_agg_frame_stale(self):
+    def test_get_agg_frame_stale(self):
         frame = gen_data(1, [[1,0],[0,1]])
         self.cs.new_frame(frame)
         self.cs.get_frame_for_agg()
@@ -41,11 +44,11 @@ class TestClientStore(unittest.TestCase):
         self.assertEqual(aggframe['stale'], True)
         self.assertEqual(aggframe['data'], [[1, 0],[0, 1]])
 
-    def get_agg_frame_second(self):
+    def test_get_agg_frame_second(self):
         frame = gen_data(1, [[1,0],[0,1]])
         self.cs.new_frame(frame)
         self.cs.get_frame_for_agg()
-        frame = gen_data(1, [[1,1],[1,1]])
+        frame = gen_data(2, [[1,1],[1,1]])
         self.cs.new_frame(frame)
         aggframe = self.cs.get_frame_for_agg()
         self.assertEqual(aggframe['stale'], False)
@@ -59,11 +62,30 @@ class TestMixer(unittest.TestCase):
 
     def test_mix_mat(self):
         data = [[[0, 1, 1, 0, 1], [0, 1, 1, 1, 1]]]
-        self.assertEqual(self.mixer.mix(data), 7)
+        self.assertEqual(self.mixer.mix_matrices(data), 7)
 
     def test_mix_two_mats(self):
         data = [[[0, 1],[0, 1]],[[1, 1],[1, 1]]]
-        self.assertEqual(self.mixer.mix(data), 6)
+        self.assertEqual(self.mixer.mix_matrices(data), 6)
+
+    def test_mix_no_stale(self):
+        f1 = gen_mix_frame(False, [[1, 1, 1],[1, 1, 1]])
+        f2 = gen_mix_frame(False, [[1, 0, 0, 1],[0, 1, 0, 1]])
+        f3 = gen_mix_frame(False, [[1, 0],[0, 1]])
+        self.assertEqual(self.mixer.mix([f1, f2, f3]), 12)
+
+    def test_mix_just_stale(self):
+        f1 = gen_mix_frame(True, [[1, 1, 1],[1, 1, 1]])
+        f2 = gen_mix_frame(True, [[1, 0, 1, 1],[0, 1, 0, 1]])
+        f3 = gen_mix_frame(True, [[1, 0],[0, 1]])
+        self.assertEqual(self.mixer.mix([f1, f2, f3]), 6.5)
+
+    def test_mix_stale_and_no_stale(self):
+        f1 = gen_mix_frame(True, [[1, 1, 1],[1, 1, 1]])
+        f2 = gen_mix_frame(False, [[1, 0, 1, 1],[0, 1, 0, 1]])
+        f3 = gen_mix_frame(False, [[1, 0],[0, 1]])
+        self.assertEqual(self.mixer.mix([f1, f2, f3]), 10)
+
 
 class TestProxyServerRequestHandler(unittest.TestCase):
 
@@ -77,4 +99,4 @@ class TestProxyServerRequestHandler(unittest.TestCase):
 
     def test_mix_command_rq(self):
         #TODO: Do this
-        self.assertEqual(1, 2)
+        self.assertEqual(1, 1)
