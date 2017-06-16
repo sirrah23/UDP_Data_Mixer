@@ -1,5 +1,6 @@
 import socket
 import threading
+import pickle
 
 MIX = "mix_command"
 FRAME = "frame_data"
@@ -56,28 +57,33 @@ class ClientStore(object):
 
 class ProxyServerReqHandler(object):
 
-    def __init__(self, Mixer):
+    def __init__(self, mixer):
         self._client_list = {}
         self._lock = threading.RLock()
-        self._mixer = Mixer()
+        self._mixer = Mixer
         self._packets = []
 
     def handle(self, data, addr):
-        #TODO: Write mix_handle and frame_handle functions...
+        data = pickle.loads(data)
         with self._lock:
             if data["request_type"] == FRAME:
-                cstore = self.get_client(addr)
-                if not cstore:
-                    cstore = self.insert_client(addr)
-                cstore.new_frame(data)
+                self.handle_frame(data, addr)
             elif data["request_type"] == MIX:
-                frames_to_agg = []
-                for _, v in self._client_list:
-                    frames_to_agg.append(v.get_frame_for_agg())
-                frames_to_agg = self.normalize_frames(frames_to_agg)
-                frames_to_agg = filter(lambda d: d['data'] != None, frames_to_agg)
-                packet = self._mixer.mix(frames_to_agg)
-                self._packets.append(packet)
+                self.handle_mix()
+
+    def handle_frame(self, data, addr):
+        cstore = self.get_client(addr)
+        if not cstore:
+            cstore = self.insert_client(addr)
+        cstore.new_frame(data)
+
+    def handle_mix(self):
+        frames_to_agg = []
+        for _, v in self._client_list:
+            frames_to_agg.append(v.get_frame_for_agg())
+        frames_to_agg = filter(lambda d: d['data'] != None, frames_to_agg)
+        packet = self._mixer.mix(frames_to_agg)
+        self._packets.append(packet)
 
     def get_client(self, addr):
         return self._client_list.get(addr, None)
@@ -103,5 +109,5 @@ class ProxyServer(object):
 
 
 if __name__ == "__main__":
-    ps = ProxyServer("127.0.0.1", 5005, Mixer)
+    ps = ProxyServer("127.0.0.1", 5005, Mixer())
     ps.run()
