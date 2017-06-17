@@ -1,4 +1,5 @@
 import unittest
+import pickle
 from src.proxy import ClientStore, Mixer, ProxyServerReqHandler
 
 ADDRESS = "127.0.0.1"
@@ -6,6 +7,12 @@ PORT = 1234
 
 def gen_data(seq_num, data):
     return {"request_type": "frame_data", "seq_num": seq_num, "data": data}
+
+def gen_server_data(seq_num, data):
+    return pickle.dumps(gen_data(seq_num, data))
+
+def gen_mix_request():
+    return pickle.dumps({"request_type": "mix_command"})
 
 def gen_mix_frame(staleness, data):
     return {"stale": staleness, "data": data}
@@ -90,13 +97,23 @@ class TestMixer(unittest.TestCase):
 class TestProxyServerRequestHandler(unittest.TestCase):
 
     def setUp(self):
-        self.psrhandler = ProxyServerReqHandler(Mixer)
+        self.psrhandler = ProxyServerReqHandler(Mixer())
 
     def test_frame_data_rq(self):
-        frame = gen_data(0, [[1,0],[0,1]])
+        frame = gen_server_data(0, [[1,0],[0,1]])
         self.psrhandler.handle(frame, (ADDRESS, PORT))
-        self.assertEqual(len(self.psrhandler._client_list), 1)
+        self.assertEqual(len(self.psrhandler._clients), 1)
 
     def test_mix_command_rq(self):
-        #TODO: Do this
-        self.assertEqual(1, 1)
+        """Mix two client frames together"""
+        client_1 = ("127.0.0.1", 5005)
+        client_2 = ("127.0.0.1", 5006)
+        frame1 = gen_server_data(0, [[1,0],[0,1]])
+        frame2 = gen_server_data(0, [[1,1],[1,1]])
+        mix_cmd = gen_mix_request()
+        self.psrhandler.handle(frame1, client_1)
+        self.psrhandler.handle(frame2, client_2)
+        self.psrhandler.handle(mix_cmd, None)
+        self.assertEqual(len(self.psrhandler._clients), 2)
+        self.assertEqual(len(self.psrhandler._packets), 1)
+        self.assertEqual(self.psrhandler._packets[0], 6)

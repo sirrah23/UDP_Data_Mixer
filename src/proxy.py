@@ -4,6 +4,8 @@ import pickle
 
 MIX = "mix_command"
 FRAME = "frame_data"
+ADDRESS = "127.0.0.1"
+PORT = 5005
 
 class Mixer(object):
 
@@ -58,9 +60,9 @@ class ClientStore(object):
 class ProxyServerReqHandler(object):
 
     def __init__(self, mixer):
-        self._client_list = {}
+        self._clients = {}
         self._lock = threading.RLock()
-        self._mixer = Mixer
+        self._mixer = mixer
         self._packets = []
 
     def handle(self, data, addr):
@@ -79,18 +81,19 @@ class ProxyServerReqHandler(object):
 
     def handle_mix(self):
         frames_to_agg = []
-        for _, v in self._client_list:
+        for _, v in self._clients.items():
             frames_to_agg.append(v.get_frame_for_agg())
-        frames_to_agg = filter(lambda d: d['data'] != None, frames_to_agg)
+        frames_to_agg = list(filter(lambda d: d['data'] != None, frames_to_agg))
+        print(self._mixer)
         packet = self._mixer.mix(frames_to_agg)
         self._packets.append(packet)
 
     def get_client(self, addr):
-        return self._client_list.get(addr, None)
+        return self._clients.get(addr, None)
 
     def insert_client(self, addr):
-        self._client_list[addr] = ClientStore(addr)
-        return self._client_list[addr]
+        self._clients[addr] = ClientStore(addr)
+        return self._clients[addr]
 
 
 class ProxyServer(object):
@@ -109,5 +112,5 @@ class ProxyServer(object):
 
 
 if __name__ == "__main__":
-    ps = ProxyServer("127.0.0.1", 5005, Mixer())
+    ps = ProxyServer(ADDRESS, PORT, Mixer())
     ps.run()
