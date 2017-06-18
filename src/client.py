@@ -3,8 +3,6 @@ import random
 import pickle
 import threading
 import time
-import src.Controller as Controller
-
 
 class SequenceNumberMgr(object):
 
@@ -120,9 +118,12 @@ class Client(object):
     def mutate(self):
         with self.lock:
             self.grid = self.generate_grid()
+            self.notify()
 
     def subscribe(self, listener):
         self.listeners.append(listener)
+        with self.lock:
+            listener.update(arr = self.grid)
 
     def unsubscribe(self, listener):
         for idx, val in enumerate(self.listeners):
@@ -131,18 +132,13 @@ class Client(object):
                 break
 
     def notify(self):
-        for listener in self.listeners:
-            listener.update
+        with self.lock:
+            for listener in self.listeners:
+                listener.update(arr = self.grid)
 
     def update(self, **kwargs):
         print(kwargs['command'])
 
-
-if __name__ == "__main__":
-    view_obj = View()
-    cont_obj = Controller(view_obj)
-    c = Client(5, 5, "127.0.0.1", 5005)
-    c.subscribe(cont_obj)
-    send_grid_interval(c, 2)
-    while True:
-        time.sleep(2)
+    def start(self):
+        print("This ran")
+        send_grid_interval(self, 2)

@@ -7,12 +7,13 @@ myfont = pygame.font.SysFont('monospace', 30)
 class GridScreen(object):
 
     def __init__(self):
-        self._arr = [[1, 0, 1, 0, 1], [1, 1, 0, 0, 0]]#None
-        self._rows = 2#None
-        self._cols = 5#None
+        self._arr = None
+        self._rows = None
+        self._cols = None
         self._lock = threading.RLock()
 
     def update(self, **kwargs):
+        print("Update gui")
         with self._lock:
             self._arr = kwargs['arr']
             self._rows = kwargs['rows']
@@ -30,16 +31,19 @@ class GridScreen(object):
                 screen.blit(textsurface,(left + rect_width//2, top + rect_height//2))
 
     def show(self):
-        x, y = 20, 20
         screen = pygame.display.set_mode((800, 800))
-        #TODO: Add lock here
         while 1:
             for event in pygame.event.get():
+                print(event)
                 if event.type in (pygame.QUIT, pygame.KEYDOWN):
-                    sys.exit()
+                    #TODO: The exit works but the GUI remains! I need to kill all the threads!
+                    #NOTE: Just added pygame.quit and return which closes the gui, now need to kill Client thread
+                    pygame.quit()
+                    return
             with self._lock:
                 arr, rows, cols = self._arr, self._rows, self._cols
             if arr:
                 self.draw_grid(screen, arr, rows, cols)
             pygame.display.update()
             pygame.time.delay(100)
+            pygame.event.pump()

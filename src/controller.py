@@ -5,10 +5,10 @@ class Controller(object):
         self.listeners = []
 
     def update(self, **kwargs):
-        arr = kwargs[arr]
+        arr = kwargs['arr']
         rows = len(arr)
         cols = len(arr[0])
-        self._view.update(arr=arr, rows=row, cols=col)
+        self._view.update(arr=arr, rows=rows, cols=cols)
 
     def subscribe(self, listener):
         self.listeners.append(listener)
