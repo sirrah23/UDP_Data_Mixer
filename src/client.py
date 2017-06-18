@@ -1,9 +1,10 @@
 import socket
 import random
 import pickle
+import threading
+import time
 
 
-#TODO: Should probably write some unit tests for this thing
 class SequenceNumberMgr(object):
 
     def __init__(self):
@@ -33,6 +34,24 @@ class SequenceNumberMgr(object):
             self.sequence_numbers.append(next(self.gen))
         self.sequence_numbers[0], self.sequence_numbers[1] = self.sequence_numbers[1], self.sequence_numbers[0]
 
+def send_grid_interval(client, interval):
+    """
+    Tell the client to send his/her data to
+    the whatever server it is communicating with
+    every <interval> seconds.
+
+    After the client sends their grid data they need
+    to mutate for the next time the data is sent.
+    """
+    def send_grid_on_timer():
+        while True:
+            time.sleep(interval)
+            client.send_frame()
+            client.mutate()
+    t = threading.Thread(target=send_grid_on_timer)
+    t.start()
+    return t
+
 
 class Client(object):
 
@@ -45,6 +64,7 @@ class Client(object):
         self.socket = self.create_socket()
         self.transmit_this_packet = True
         self.sqnmanager = SequenceNumberMgr()
+        self.lock = threading.RLock()
 
     def generate_grid(self):
         grid = []
@@ -59,11 +79,12 @@ class Client(object):
         return socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def send_frame(self):
-        if self.transmit_this_packet:
-            data = self.generate_msg()
-            self.send_msg_to_proxy(data)
-        else:
-            self.transmit_this_packet = False
+        with self.lock:
+            if self.transmit_this_packet:
+                data = self.generate_msg()
+                self.send_msg_to_proxy(data)
+            else:
+                self.transmit_this_packet = True
 
     def send_msg_to_proxy(self, data):
         msg = pickle.dumps(data)
@@ -80,13 +101,27 @@ class Client(object):
         self.socket.close()
 
     def drop_packet(self):
-        if self.transmit_this_packet:
-            self.transmit_this_packet = False
-            self.sqnmanager.skip_seq_num()
+        with self.lock:
+            if self.transmit_this_packet:
+                self.transmit_this_packet = False
+                self.sqnmanager.skip_seq_num()
 
     def skip_packet(self):
-        if self.transmit_this_packet:
-            self.sqnmanager.skip_seq_num()
+        with self.lock:
+            if self.transmit_this_packet:
+                self.sqnmanager.skip_seq_num()
 
     def reverse_seq(self):
-        self.sqnmanager.reverse_seq_nums()
+        with self.lock:
+            self.sqnmanager.reverse_seq_nums()
+
+    def mutate(self):
+        with self.lock:
+            self.grid = self.generate_grid()
+
+
+if __name__ == "__main__":
+    c = Client(5, 5, "127.0.0.1", 5005)
+    send_grid_interval(c, 2)
+    while True:
+        time.sleep(2)

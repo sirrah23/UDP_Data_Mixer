@@ -1,6 +1,7 @@
 import socket
 import threading
 import pickle
+import time
 
 MIX = "mix_command"
 FRAME = "frame_data"
@@ -56,6 +57,19 @@ class ClientStore(object):
             data = None
         return {'stale':stale, 'data':data}
 
+def mix_interval(server, interval):
+    """
+    Tell the server to mix current packet data to
+    using whatever the mixing algorithm is.
+    """
+    def mix_grids_on_timer():
+        while True:
+            time.sleep(interval)
+            server.mix()
+    t = threading.Thread(target=mix_grids_on_timer)
+    t.start()
+    return t
+
 
 class ProxyServerReqHandler(object):
 
@@ -80,13 +94,14 @@ class ProxyServerReqHandler(object):
         cstore.new_frame(data)
 
     def handle_mix(self):
-        frames_to_agg = []
-        for _, v in self._clients.items():
-            frames_to_agg.append(v.get_frame_for_agg())
-        frames_to_agg = list(filter(lambda d: d['data'] != None, frames_to_agg))
-        print(self._mixer)
-        packet = self._mixer.mix(frames_to_agg)
-        self._packets.append(packet)
+        with self._lock:
+            frames_to_agg = []
+            for _, v in self._clients.items():
+                frames_to_agg.append(v.get_frame_for_agg())
+            frames_to_agg = list(filter(lambda d: d['data'] != None, frames_to_agg))
+            packet = self._mixer.mix(frames_to_agg)
+            self._packets.append(packet)
+            print(self._packets) #TODO: Remove
 
     def get_client(self, addr):
         return self._clients.get(addr, None)
@@ -104,6 +119,9 @@ class ProxyServer(object):
         self.port = port
         self.reqhandler = ProxyServerReqHandler(Mixer)
 
+    def mix(self):
+        self.reqhandler.handle_mix()
+
     def run(self):
         self._sock.bind((self.address, self.port))
         while True:
@@ -113,4 +131,5 @@ class ProxyServer(object):
 
 if __name__ == "__main__":
     ps = ProxyServer(ADDRESS, PORT, Mixer())
+    mix_interval(ps, 3)
     ps.run()
