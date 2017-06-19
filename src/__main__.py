@@ -11,5 +11,6 @@ def main():
         client_thread = threading.Thread(target=client.start)
         client_thread.start()
         gs.show()
+        client.stop()
 
 main()

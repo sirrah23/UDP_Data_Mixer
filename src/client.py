@@ -43,10 +43,13 @@ def send_grid_interval(client, interval):
     to mutate for the next time the data is sent.
     """
     def send_grid_on_timer():
-        while True:
+        while not client._stop:
             time.sleep(interval)
             client.send_frame()
             client.mutate()
+        client.send_stop()
+        client.stop_client()
+        return
     t = threading.Thread(target=send_grid_on_timer)
     t.start()
     return t
@@ -65,6 +68,7 @@ class Client(object):
         self.sqnmanager = SequenceNumberMgr()
         self.lock = threading.RLock()
         self.listeners = []
+        self._stop = False
 
     def generate_grid(self):
         grid = []
@@ -142,3 +146,9 @@ class Client(object):
     def start(self):
         print("This ran")
         send_grid_interval(self, 2)
+
+    def stop(self):
+        self._stop = True
+
+    def send_stop(self):
+        self.send_msg_to_proxy({"request_type": "stop"})

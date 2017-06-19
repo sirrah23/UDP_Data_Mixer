@@ -5,6 +5,7 @@ import time
 
 MIX = "mix_command"
 FRAME = "frame_data"
+STOP = "stop"
 ADDRESS = "127.0.0.1"
 PORT = 5005
 
@@ -86,6 +87,8 @@ class ProxyServerReqHandler(object):
                 self.handle_frame(data, addr)
             elif data["request_type"] == MIX:
                 self.handle_mix()
+            elif data["request_type"] == STOP:
+                self.handle_stop(addr)
 
     def handle_frame(self, data, addr):
         cstore = self.get_client(addr)
@@ -103,12 +106,21 @@ class ProxyServerReqHandler(object):
             self._packets.append(packet)
             print(self._packets) #TODO: Remove
 
+    def handle_stop(self, addr):
+        self.delete_client(addr)
+
     def get_client(self, addr):
         return self._clients.get(addr, None)
 
     def insert_client(self, addr):
         self._clients[addr] = ClientStore(addr)
         return self._clients[addr]
+
+    def delete_client(self, addr):
+        try:
+            del self._clients[addr]
+        except KeyError:
+            pass
 
 
 class ProxyServer(object):

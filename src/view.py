@@ -36,8 +36,6 @@ class GridScreen(object):
             for event in pygame.event.get():
                 print(event)
                 if event.type in (pygame.QUIT, pygame.KEYDOWN):
-                    #TODO: The exit works but the GUI remains! I need to kill all the threads!
-                    #NOTE: Just added pygame.quit and return which closes the gui, now need to kill Client thread
                     pygame.quit()
                     return
             with self._lock:
