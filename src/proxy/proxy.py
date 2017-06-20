@@ -6,8 +6,6 @@ import time
 MIX = "mix_command"
 FRAME = "frame_data"
 STOP = "stop"
-ADDRESS = "127.0.0.1"
-PORT = 5005
 
 class Mixer(object):
 
