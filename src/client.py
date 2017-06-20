@@ -67,7 +67,7 @@ class Client(object):
         self.transmit_this_packet = True
         self.sqnmanager = SequenceNumberMgr()
         self.lock = threading.RLock()
-        self.listeners = []
+        self._listeners = []
         self._stop = False
 
     def generate_grid(self):
@@ -86,6 +86,7 @@ class Client(object):
         with self.lock:
             if self.transmit_this_packet:
                 data = self.generate_msg()
+                print data['seq_num']
                 self.send_msg_to_proxy(data)
             else:
                 self.transmit_this_packet = True
@@ -125,9 +126,9 @@ class Client(object):
             self.notify()
 
     def subscribe(self, listener):
-        self.listeners.append(listener)
+        self._listeners.append(listener)
         with self.lock:
-            listener.update(arr = self.grid)
+            listener.update(type ="client_grid", arr = self.grid)
 
     def unsubscribe(self, listener):
         for idx, val in enumerate(self.listeners):
@@ -137,11 +138,17 @@ class Client(object):
 
     def notify(self):
         with self.lock:
-            for listener in self.listeners:
-                listener.update(arr = self.grid)
+            for listener in self._listeners:
+                listener.update(type="client_grid", arr = self.grid)
 
     def update(self, **kwargs):
-        print(kwargs['command'])
+        if kwargs.get('type', None) == "command":
+            if kwargs['command_type'] == "drop":
+                self.drop_packet()
+            elif kwargs.get('command_type', None) == "skip":
+                self.skip_packet()
+            elif kwargs.get('command_type', None) == "reverse":
+                self.reverse_seq()
 
     def start(self):
         print("This ran")

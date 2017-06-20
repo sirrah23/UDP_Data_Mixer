@@ -11,13 +11,7 @@ class GridScreen(object):
         self._rows = None
         self._cols = None
         self._lock = threading.RLock()
-
-    def update(self, **kwargs):
-        print("Update gui")
-        with self._lock:
-            self._arr = kwargs['arr']
-            self._rows = kwargs['rows']
-            self._cols = kwargs['cols']
+        self._listeners = []
 
     def draw_grid(self, screen, arr, rows, cols):
         rect_height = 800 // rows
@@ -34,10 +28,16 @@ class GridScreen(object):
         screen = pygame.display.set_mode((800, 800))
         while 1:
             for event in pygame.event.get():
-                print(event)
-                if event.type in (pygame.QUIT, pygame.KEYDOWN):
+                if event.type == pygame.QUIT:
                     pygame.quit()
                     return
+                if event.type == pygame.KEYDOWN:
+                    if pygame.key.get_pressed()[pygame.K_d] != 0:
+                        self.notify(type="command", command_type="drop")
+                    elif pygame.key.get_pressed()[pygame.K_s] != 0: 
+                        self.notify(type="command", command_type="skip")
+                    elif pygame.key.get_pressed()[pygame.K_r] != 0: 
+                        self.notify(type="command", command_type="reverse")
             with self._lock:
                 arr, rows, cols = self._arr, self._rows, self._cols
             if arr:
@@ -45,3 +45,28 @@ class GridScreen(object):
             pygame.display.update()
             pygame.time.delay(100)
             pygame.event.pump()
+
+    def subscribe(self, listener):
+        self._listeners.append(listener)
+
+    def unsubscribe(self, listener):
+        for idx, val in enumerate(self.listeners):
+            if listener == val:
+                del self.listeners[idx]
+                break
+
+    def notify(self, **kwargs):
+        if kwargs.get('type', None) == 'client_grid':
+            with self.lock:
+                for listener in self._listeners:
+                    listener.update(type="client_grid", arr = self.grid)
+        if kwargs.get('type', None) == 'command':
+                for listener in self._listeners:
+                    listener.update(type="command", command_type = kwargs['command_type'])
+
+    def update(self, **kwargs):
+        if kwargs.get('type', None) == 'update_view':
+            with self._lock:
+                self._arr = kwargs['arr']
+                self._rows = kwargs['rows']
+                self._cols = kwargs['cols']
