@@ -139,9 +139,3 @@ class ProxyServer(object):
         while True:
             data, addr = self._sock.recvfrom(1024)
             threading.Thread(target=self.reqhandler.handle, args=(data, addr)).start()
-
-
-if __name__ == "__main__":
-    ps = ProxyServer(ADDRESS, PORT, Mixer())
-    mix_interval(ps, 3)
-    ps.run()

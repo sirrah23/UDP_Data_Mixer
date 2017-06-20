@@ -1,6 +1,6 @@
 import unittest
 import pickle
-from src.proxy import ClientStore, Mixer, ProxyServerReqHandler
+from src.proxy.proxy import ClientStore, Mixer, ProxyServerReqHandler
 
 ADDRESS = "127.0.0.1"
 PORT = 1234

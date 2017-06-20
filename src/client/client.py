@@ -86,7 +86,6 @@ class Client(object):
         with self.lock:
             if self.transmit_this_packet:
                 data = self.generate_msg()
-                print data['seq_num']
                 self.send_msg_to_proxy(data)
             else:
                 self.transmit_this_packet = True
@@ -151,7 +150,6 @@ class Client(object):
                 self.reverse_seq()
 
     def start(self):
-        print("This ran")
         send_grid_interval(self, 2)
 
     def stop(self):

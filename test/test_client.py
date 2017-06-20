@@ -1,6 +1,6 @@
 import unittest
 import time
-from src.client import Client
+from src.client.client import Client
 from .utils import FakeServer
 
 ADDRESS = "127.0.0.1"
