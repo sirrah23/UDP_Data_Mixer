@@ -2,10 +2,19 @@ from client import Client
 from view import GridScreen
 from controller import Controller
 import threading
+import argparse
 
 def main():
-		# Initialize objects
-        client = Client(5, 5, "127.0.0.1", 5005)
+        # Get command line arguments
+        parser = argparse.ArgumentParser(description="Start a matrix-client")
+        parser.add_argument('rows', type=int, help="the number of rows in the client matrix")
+        parser.add_argument('columns', type=int, help="the number of columns in the client matrix")
+        parser.add_argument('ip', type=str, help="ip of the proxy server")
+        parser.add_argument('port', type=int, help="port of the proxy server")
+        args = vars(parser.parse_args())
+
+	# Initialize objects
+        client = Client(args['rows'], args['columns'], args['ip'], args['port'])
         gs = GridScreen()
         controller = Controller()
 
