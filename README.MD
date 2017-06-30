@@ -35,8 +35,8 @@ The client is a front-end that shows the user a nxm matrix. It
 connects to the the proxy server and then every two seconds it 
 generates/sends random binary matrices to the server for mixing.
 
-The user can interact with the server by pressing some keys.
+The user can interact with the server by pressing the following keys:
 
-* Press D to drop a packet
-* Press S to skip a packet
-* Press R to reverse sequence numbers for packets
+* D to drop a packet
+* S to skip a packet
+* R to reverse sequence numbers for packets
